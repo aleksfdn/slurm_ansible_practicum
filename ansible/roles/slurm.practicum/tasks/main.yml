@@ -1,0 +1,58 @@
+# Deploy Application Ruby
+
+- name: "Stop service"
+  service:
+    name: '{{ app_name }}.service'
+    enabled: false
+    state: stopped
+  ignore_errors: true
+
+- name: "Delete Old version"
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - '{{ app_dest_folder }}/{{ app_name }}'
+    - '/tmp/{{ app_archive }}'
+    - '/tmp/{{ app_name }}'
+  ignore_errors: true
+
+- name: "Copy Application archive"
+  copy:
+    src: 'files/{{ app_archive }}'
+    dest: '/tmp'
+
+- name: "Extract Application"
+  shell: |
+    mkdir '/tmp/{{ app_name }}' '{{ app_dest_folder }}/{{ app_name }}'
+    cd '/tmp/{{ app_name }}'
+    unzip -q '/tmp/{{ app_archive }}'
+    cd *; mv * {{ app_dest_folder }}/{{ app_name }}
+
+- name: "Copy application env file"
+  copy:
+    src: '{{ app_name }}.conf'
+    dest: '{{ app_dest_folder }}/{{ app_name }}/config'
+    mode: 0400
+
+- name: "Copy systemctl service file"
+  template:
+    src: '{{ app_name }}.service.j2'
+    dest: '/usr/lib/systemd/system/{{ app_name }}.service'
+
+- name: "Configure Ruby packages"
+  shell: |
+    cd {{ app_dest_folder }}/{{ app_name }}
+    source /opt/rh/rh-ruby26/enable
+    gem install bundler
+    bundle update --bundler
+#  ignore_errors: true
+
+- name: "Start and enable systemd service"
+  service:
+    name: '{{ app_name }}.service'
+    enabled: yes
+    state: reloaded
+
+- name: Unconditionally reboot the machine with all defaults
+  reboot:

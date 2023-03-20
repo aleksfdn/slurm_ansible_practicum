@@ -1,0 +1,4 @@
+app_name: 'xpaste'
+app_archive: 'xpaste_practicum-master.zip'
+app_dest_folder: '/opt'
+app_socket: '/var/run/puma.sock'

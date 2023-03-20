@@ -1,0 +1,16 @@
+---
+# PLAYBOOK SLURM ANSIBLE PRACTICUM #
+- hosts: server
+  gather_facts: true
+  any_errors_fatal: true
+  vars:
+    nginx_yum_repo_enabled: true
+  vars_files:
+    - vars/postgres_conf.yml
+    - vars/app_conf.yml 
+  roles:
+    - tune.os
+    - geerlingguy.nginx
+    - postgresql
+    - tune.nginx
+    - slurm.practicum

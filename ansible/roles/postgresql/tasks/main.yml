@@ -1,0 +1,73 @@
+---
+#- name: "Load variables"
+#  include_vars:
+#    file: "{{ config_file }}"
+
+- name: "Install Postgres packages"
+  package: 
+    name:
+      - postgresql
+      - postgresql-libs
+      - postgresql-server
+      - postgresql-devel
+    state: latest
+    update_cache: yes
+
+- name: "Initialize PostgreSQL"
+  shell: "postgresql-setup initdb"
+  ignore_errors: true
+
+- name: "Start and enable Postgres"
+  service: 
+    name: postgresql.service
+    state: restarted
+    enabled: yes
+  
+##- name: "Check if database is available"
+#  postgresql_ping:
+#    db: "{{ db_name }}"
+#  become: yes
+#  become_user: postgres
+#  register: ping_database
+#  failed_when: ping_database.warnings is defined
+
+- name: "Create app database"
+  postgresql_db:
+    name: "{{ db_name }}"
+    state: present
+  become: true
+  become_user: postgres
+
+#- name: "Change port from default"
+#  postgresql_set:
+#    name: port
+#    value: "{{ db_port }} |int"
+
+- name: "Create user for app"
+  postgresql_user:
+    name: "{{ db_user }}"
+    state: present
+    password: "{{ db_passwd }}"
+  become: true
+  become_user: postgres
+
+- name: "Grant access"
+  postgresql_privs:
+    database: "{{ db_name }}"
+    type: database
+    roles: "{{ db_user }}"
+    grant_option: no
+    privs: all
+  become: true
+  become_user: postgres
+
+- name: "Allow md5 connection"
+  postgresql_pg_hba:
+    databases: all
+    dest: "~/data/pg_hba.conf"
+    contype: host
+    method: md5
+    users: "{{ db_user }}"
+    create: true
+  become: true
+  become_user: postgres

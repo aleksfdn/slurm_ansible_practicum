@@ -1,0 +1,23 @@
+[Unit]
+Description=Xpaste Service 
+;Requires=syslog.socket
+Wants=network.target network-online.target
+After=network.target network-online.target
+
+[Service]
+;Type=notify
+EnvironmentFile={{ app_dest_folder }}/{{ app_name }}/config/{{ app_name }}.conf
+;EnvironmentFile=/opt/rh/rh-ruby26/enable
+WorkingDirectory={{ app_dest_folder }}/{{ app_name }}
+ExecStart=/bin/bash -c 'set -a; source /opt/rh/rh-ruby26/enable; bundle exec rake db:migrate && bundle exec puma -b unix:///var/run/puma.sock -e $RAILS_ENV config.ru'
+UMask=0066
+StandardOutput=null
+;Restart=on-failure
+
+# Increase the default a bit in order to allow many simultaneous
+# files to be monitored, we might need a lot of fds.
+LimitNOFILE=16384
+
+[Install]
+WantedBy=multi-user.target
+;Alias=XXXX.service
